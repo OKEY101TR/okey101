@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Okey 101</title>
+<style>
+:root{--ivory:#f8f1dc;--c0:#d98e04;--c1:#1d4ed8;--c2:#111827;--c3:#dc2626;--c4:#7c3aed}
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none}
+body{margin:0;background:#0b2e1a;color:#f8fafc;font:15px system-ui,sans-serif}
+#app{max-width:760px;margin:0 auto;padding:10px}
+header{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;margin-bottom:8px}
+h1{font-size:20px;margin:0;font-weight:600}
+#scores{display:flex;gap:6px;flex-wrap:wrap;font-size:13px}
+#scores span{background:#14532d;padding:3px 8px;border-radius:12px}
+#scores .on{outline:2px solid #facc15}
+#board{display:grid;grid-template-columns:minmax(66px,92px) 1fr minmax(66px,92px);grid-template-areas:". top ." "left center right";gap:8px;background:#14532d;border-radius:14px;padding:10px;min-height:330px}
+.seat{text-align:center;font-size:12px}
+.seat.turn .nm{color:#facc15}
+.nm{font-weight:600;font-size:14px}
+#s2{grid-area:top}#s3{grid-area:left}#s1{grid-area:right}#center{grid-area:center}
+.pile{display:inline-block;width:34px;margin-top:6px;min-height:46px}
+.pile.take .tile{outline:2px dashed #facc15;cursor:pointer}
+.empty{opacity:.5;font-size:11px}
+.tile{position:relative;aspect-ratio:3/4;background:var(--ivory);border-radius:6px;box-shadow:0 2px 0 #c9b98a;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--col);font-weight:700;touch-action:none;cursor:grab}
+.tile b{font-size:clamp(12px,3.4vw,20px);line-height:1}
+.tile i{width:28%;aspect-ratio:1;border:2px solid currentColor;border-radius:50%;margin-top:3px}
+.c0{--col:var(--c0)}.c1{--col:var(--c1)}.c2{--col:var(--c2)}.c3{--col:var(--c3)}.c4{--col:var(--c4)}
+.wild{box-shadow:0 0 0 3px #facc15}
+.tile.sel{transform:translateY(-8px);outline:2px solid #facc15}
+.pile .tile{width:34px;cursor:default}
+.info{display:flex;justify-content:center;gap:14px;align-items:flex-end;font-size:11px;text-align:center}
+.info .tile{width:34px;cursor:default}
+.stock{width:34px;aspect-ratio:3/4;border-radius:6px;background:#d6c79a;color:#3f3a24;display:flex;align-items:center;justify-content:center;font-weight:700;cursor:default}
+.stock.take{outline:2px dashed #facc15;cursor:pointer}
+.melds{margin-top:10px;display:flex;flex-wrap:wrap;justify-content:center}
+.meld{display:inline-flex;flex-direction:column;background:rgba(0,0,0,.22);border-radius:8px;padding:3px 4px;margin:3px;cursor:pointer}
+.meld .own{font-size:10px;opacity:.8}
+.meld .row{display:flex;gap:2px}
+.meld .tile{width:clamp(20px,5.4vw,28px);cursor:pointer}
+.meld .tile b{font-size:clamp(10px,2.8vw,14px)}
+.meld .tile i{display:none}
+#hint{margin:8px 0;font-size:13px;color:#fde68a;min-height:18px}
+#pend{background:rgba(255,255,255,.08);border-radius:10px;padding:6px 8px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+#pend .meld{cursor:default}
+#wrap{display:flex;gap:8px;align-items:stretch}
+#rack{flex:1;display:grid;grid-template-columns:repeat(14,1fr);gap:3px;padding:8px;background:linear-gradient(#8b5a2b,#6b4423);border-radius:10px}
+.slot{aspect-ratio:3/4;background:rgba(0,0,0,.25);border-radius:6px}
+.slot .tile{width:100%;height:100%}
+#dropDiscard{width:62px;border:2px dashed #fde68a;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#fde68a;text-align:center;gap:4px;padding:2px}
+#dropDiscard .tile{width:34px;cursor:default}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+button{font:inherit;font-size:13px;padding:8px 12px;border-radius:8px;border:0;background:#e2e8f0;color:#0f172a;cursor:pointer}
+button.go{background:#facc15}
+button:disabled{opacity:.45;cursor:default}
+#log{margin-top:8px;font-size:12px;opacity:.8;min-height:16px}
+details{margin-top:10px;font-size:12px;opacity:.9}
+.ghost{position:fixed;width:44px;pointer-events:none;z-index:9;transform:translate(-50%,-50%);opacity:.9}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:20}
+#ov .card{background:#f8fafc;color:#0f172a;border-radius:14px;padding:18px 22px;min-width:260px}
+#ov h2{margin:0 0 10px;font-size:18px}
+#ov table{width:100%;border-collapse:collapse;margin-bottom:12px}
+#ov td,#ov th{padding:3px 6px;text-align:right}#ov td:first-child,#ov th:first-child{text-align:left}
+</style></head><body>
+<div id="app">
+<header><h1>Okey 101</h1><div id="scores"></div></header>
+<div id="board"></div>
+<div id="hint"></div>
+<div id="bottom"></div>
+<div id="log"></div>
+<details><summary>Kurallar (sadeleştirilmiş sürüm)</summary>
+<p>106 taş, 2 sahte okey. Gösterge çevrilir, aynı renkte bir büyük sayı okey olur ve joker sayılır. Sahte okey, okey taşının yüzünü taşır.
+Dağıtıcı 22, diğerleri 21 taş alır, dağıtıcı bir taş atarak başlar. Sıra saat yönünün tersine döner; ortadan ya da solundaki oyuncunun attığı taştan çekersin.
+El açmak için gruplar (aynı sayı, farklı renk, 3-4 taş) ve seriler (aynı renk, ardışık, en az 3 taş) toplamı en az 101 olmalı, ya da en az 5 çift açmalısın.
+1 taşı serilerde her yerde 1 puan sayılır, 13'ten sonra 1 gelebilir (12-13-1). Açtıktan sonra masadaki perlere taş işleyebilirsin (çift açtıysan işleyemezsin, yalnızca çift koyabilirsin).
+Elini bitiren -101 alır (çiftle bitiren 2 kat). Açamayanlar +202, açanlar elinde kalan taş toplamı kadar puan yazar (kalan okey 101). Deste biterse el berabere kalır.</p></details>
+</div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const NAMES=['Sen','Kemal','Ayşe','Mehmet'];
+let S=null,total=[0,0,0,0],dealer=3,sel=new Set(),pending=[],rack=Array(28).fill(null),drag=null;
+
+const isWild=t=>!t.fake&&t.c===S.OC&&t.n===S.ON;
+const ec=t=>t.fake?{c:S.OC,n:S.ON}:{c:t.c,n:t.n};
+const val=t=>isWild(t)?101:ec(t).n;
+const getHand=p=>p===0?rack.filter(Boolean):S.hands[p];
+const split=ts=>{const w=[],r=[];ts.forEach(t=>(isWild(t)?w:r).push(t));return[w,r];};
+function mk(){const a=[];let id=0;for(let k=0;k<2;k++)for(let c=0;c<4;c++)for(let n=1;n<=13;n++)a.push({id:id++,c,n});a.push({id:id++,c:-1,n:0,fake:true},{id:id++,c:-1,n:0,fake:true});return a;}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function validateMeld(ts){
+  const L=ts.length;if(L<3)return null;
+  const [w,r]=split(ts);if(!r.length)return null;
+  const nums=new Set(r.map(t=>ec(t).n)),cols=new Set(r.map(t=>ec(t).c));
+  if(L<=4&&nums.size===1&&cols.size===r.length){
+    const n=[...nums][0],free=[0,1,2,3].filter(c=>!cols.has(c));let k=0;
+    const seq=r.map(t=>({t,c:ec(t).c,n}));w.forEach(t=>seq.push({t,c:free[k++],n}));
+    return{kind:'set',pts:n*L,seq};
+  }
+  if(cols.size===1&&L<=14){
+    const c=[...cols][0];let best=null;
+    for(let s=1;s+L-1<=14;s++){
+      const used=new Map();let ok=true;
+      for(const t of r){const n=ec(t).n;const p=(n>=s&&n<=s+L-1)?n:((n===1&&s+L-1===14)?14:-1);if(p<0||used.has(p)){ok=false;break;}used.set(p,t);}
+      if(!ok)continue;
+      const wl=w.slice(),seq=[];let pts=0;
+      for(let p=s;p<=s+L-1;p++){const n=p===14?1:p;seq.push({t:used.get(p)||wl.pop(),c,n});pts+=n;}
+      if(!best||pts>best.pts)best={kind:'run',pts,seq};
+    }
+    if(best)return best;
+  }
+  return null;
+}
+function pairsFrom(ts){
+  const [w0,r]=split(ts),ws=w0.slice(),g={};
+  r.forEach(t=>{const e=ec(t);(g[e.c+'_'+e.n]=g[e.c+'_'+e.n]||[]).push(t);});
+  const pairs=[],singles=[];
+  for(const k in g){const a=g[k];while(a.length>=2)pairs.push([a.pop(),a.pop()]);if(a.length)singles.push(a.pop());}
+  while(singles.length&&ws.length)pairs.push([singles.pop(),ws.pop()]);
+  while(ws.length>=2)pairs.push([ws.pop(),ws.pop()]);
+  return pairs;
+}
+const validatePairs=ts=>{if(ts.length%2||!ts.length)return null;const p=pairsFrom(ts);return p.length*2===ts.length?p:null;};
+const pairMeld=(a,b,owner)=>{const e=ec(a);return{owner,kind:'pair',pts:0,seq:[{t:a,c:e.c,n:e.n},{t:b,c:e.c,n:e.n}]};};
+
+function solve(hand,weight){
+  const n=hand.length,cands=Array.from({length:n},()=>[]),cur=[];
+  (function go(s){
+    if(cur.length>=3){
+      const ts=cur.map(i=>hand[i]);
+      if(ts.filter(isWild).length<=1){const v=validateMeld(ts);if(v){let m=0;cur.forEach(i=>m|=1<<i);cands[cur[0]].push({idx:cur.slice(),mask:m,v,pts:v.pts});}}
+    }
+    if(cur.length===5)return;
+    for(let i=s;i<n;i++){cur.push(i);go(i+1);cur.pop();}
+  })(0);
+  const memo=new Map();let nodes=0;
+  function dfs(i,used){
+    while(i<n&&((used>>i)&1))i++;
+    if(i>=n||nodes>250000)return{w:0,pick:[]};
+    const key=used*32+i;if(memo.has(key))return memo.get(key);
+    nodes++;
+    let best=dfs(i+1,used);
+    for(const c of cands[i])if(!(c.mask&used)){const r=dfs(i+1,used|c.mask);const w=r.w+weight(c);if(w>best.w)best={w,pick:[c].concat(r.pick)};}
+    memo.set(key,best);return best;
+  }
+  return dfs(0,0);
+}
+
+function say(m){S.logs.push(m);if(S.logs.length>3)S.logs.shift();render();}
+function newRound(){
+  dealer=(dealer+1)%4;let deck,g;
+  do{deck=shuffle(mk());g=deck.pop();}while(g.fake);
+  S={OC:g.c,ON:g.n%13+1,g,hands:[[],[],[],[]],stock:[],disc:[[],[],[],[]],table:[],opened:[false,false,false,false],pairs:[false,false,false,false],turn:dealer,phase:'discard',first:true,over:false,result:null,logs:[],gen:(S?S.gen+1:1)};
+  for(let p=0;p<4;p++){const k=p===dealer?22:21;for(let i=0;i<k;i++)S.hands[p].push(deck.pop());}
+  S.stock=deck;rack.fill(null);pending=[];sel.clear();
+  S.hands[0].forEach(t=>place(t));S.hands[0]=[];
+  S.logs.push(dealer===0?'Dağıtıcı sensin: 22 taşın var, bir taş atarak başla.':NAMES[dealer]+' dağıttı.');
+  next();
+}
+function place(t){const i=rack.findIndex(x=>!x);rack[i]=t;}
+function next(){
+  render();if(S.over)return;
+  if(S.turn===0){if(S.phase==='draw'&&!S.stock.length)tie();return;}
+  const g=S.gen,p=S.turn;
+  setTimeout(()=>{if(S.gen===g&&!S.over&&S.turn===p)botTurn(p);},S.first?500:950);
+}
+function tie(){S.over=true;S.result={tie:true,d:[0,0,0,0]};render();}
+function handPts(q){let s=getHand(q).reduce((a,t)=>a+val(t),0);if(q===0)pending.forEach(m=>m.tiles.forEach(t=>s+=val(t)));return s;}
+function win(p){
+  S.over=true;const mult=S.pairs[p]?2:1,d=[0,0,0,0];
+  for(let q=0;q<4;q++)d[q]=q===p?-101*mult:(S.opened[q]?handPts(q):202)*mult;
+  d.forEach((x,i)=>total[i]+=x);S.result={winner:p,d};render();
+}
+const myTurn=()=>!S.over&&S.turn===0&&S.phase==='discard';
+function drawStock(){
+  if(S.over||S.turn!==0||S.phase!=='draw')return;
+  if(!S.stock.length)return tie();
+  place(S.stock.pop());S.phase='discard';say('Ortadan çektin.');
+}
+function drawDisc(){
+  if(S.over||S.turn!==0||S.phase!=='draw')return;
+  const t=S.disc[3].pop();if(!t)return;
+  place(t);S.phase='discard';say('Mehmet\'in attığı taşı aldın.');
+}
+function discard(id){
+  if(!myTurn())return;
+  if(pending.length)return say('Önce eli aç ya da açılacak perleri geri al.');
+  const i=rack.findIndex(t=>t&&t.id===id);if(i<0)return;
+  const t=rack[i];rack[i]=null;sel.delete(id);S.disc[0].push(t);S.first=false;
+  if(rack.every(x=>!x))return win(0);
+  S.turn=1;S.phase='draw';next();
+}
+function throwSel(){
+  if(!myTurn())return;
+  const ts=selTiles();if(ts.length!==1)return say('Atmak için bir taş seç.');
+  discard(ts[0].id);
+}
+const selTiles=()=>rack.filter(t=>t&&sel.has(t.id));
+const removeFromRack=ts=>ts.forEach(t=>{const i=rack.indexOf(t);if(i>=0)rack[i]=null;});
+function checkEmpty(){if(S.opened[0]&&!pending.length&&rack.every(x=>!x))win(0);}
+function perAc(){
+  if(!myTurn())return say('Per açmak için önce taş çekmelisin.');
+  const ts=selTiles();
+  if(S.pairs[0]){
+    const v=ts.length>=2&&validatePairs(ts);
+    if(!v)return say('Çift açtığın için yalnızca çift (aynı renk ve sayı) koyabilirsin.');
+    removeFromRack(ts);v.forEach(p=>S.table.push(pairMeld(p[0],p[1],0)));sel.clear();checkEmpty();return render();
+  }
+  const v=validateMeld(ts);
+  if(!v)return say('Geçerli per değil: grup (aynı sayı, farklı renk) ya da seri (aynı renk, ardışık), en az 3 taş.');
+  removeFromRack(ts);
+  if(S.opened[0])S.table.push({owner:0,kind:v.kind,seq:v.seq,pts:v.pts});else pending.push({tiles:ts,seq:v.seq,kind:v.kind,pts:v.pts});
+  sel.clear();checkEmpty();render();
+}
+const pendTotal=()=>pending.reduce((a,m)=>a+m.pts,0);
+function commitOpen(){
+  if(!myTurn())return;
+  if(pendTotal()<101)return say('El açmak için toplam en az 101 puan gerekir.');
+  pending.forEach(m=>S.table.push({owner:0,kind:m.kind,seq:m.seq,pts:m.pts}));
+  pending=[];S.opened[0]=true;say('Eli açtın.');checkEmpty();
+}
+function undoPending(){pending.forEach(m=>m.tiles.forEach(t=>place(t)));pending=[];render();}
+function cift(){
+  if(!myTurn())return;
+  if(S.opened[0])return say('Zaten elini açtın.');
+  if(pending.length)return say('Önce açılacak perleri geri al.');
+  const ts=selTiles();
+  if(ts.length<10||ts.length%2)return say('Çift açmak için en az 10 taş (5 çift) seç.');
+  const v=validatePairs(ts);if(!v)return say('Seçtiğin taşlar çift oluşturmuyor (aynı renk ve sayı, okey joker).');
+  removeFromRack(ts);v.forEach(p=>S.table.push(pairMeld(p[0],p[1],0)));
+  S.opened[0]=true;S.pairs[0]=true;sel.clear();say('Çift açtın.');checkEmpty();
+}
+function attach(t,mi){
+  const m=S.table[mi];if(m.kind==='pair')return false;
+  const v=validateMeld(m.seq.map(x=>x.t).concat(t));if(!v)return false;
+  m.kind=v.kind;m.seq=v.seq;m.pts=v.pts;return true;
+}
+function attachSel(mi){
+  if(!myTurn())return say('Önce taş çekmelisin.');
+  if(!S.opened[0])return say('İşlemek için önce elini açmalısın.');
+  if(S.pairs[0])return say('Çift açtığın için perlere işleyemezsin.');
+  const ts=selTiles();if(!ts.length)return say('Önce işlemek istediğin taşı seç.');
+  let ok=0;ts.forEach(t=>{if(attach(t,mi)){removeFromRack([t]);sel.delete(t.id);ok++;}});
+  if(!ok)return say('Bu taş bu pere işlenemiyor.');
+  checkEmpty();render();
+}
+function sortRack(mode){
+  const ts=rack.filter(Boolean);
+  const key=t=>{if(isWild(t))return 9999;const e=ec(t);return mode?e.n*10+e.c:e.c*100+e.n;};
+  ts.sort((a,b)=>key(a)-key(b));rack.fill(null);ts.forEach((t,i)=>rack[i]=t);render();
+}
+
+const BOTS_MIN=101;
+function use(t,h){
+  if(isWild(t))return 99;const a=ec(t);let u=0;
+  for(const o of h){if(o===t||isWild(o))continue;const b=ec(o);
+    if(a.n===b.n&&a.c!==b.c)u+=2;
+    else if(a.c===b.c){const d=Math.abs(a.n-b.n);if(d===1||d===12)u+=2;else if(d===2)u+=1;else if(d===0)u+=1.5;}}
+  return u+Math.random()*.1;
+}
+function placeMelds(p,pick){
+  const rm=new Set();
+  pick.forEach(c=>{S.table.push({owner:p,kind:c.v.kind,seq:c.v.seq,pts:c.v.pts});c.idx.forEach(i=>rm.add(i));});
+  S.hands[p]=S.hands[p].filter((_,i)=>!rm.has(i));
+}
+function botPairs(p){
+  const pr=pairsFrom(S.hands[p]);if(!pr.length)return 0;
+  const used=new Set();pr.forEach(x=>{S.table.push(pairMeld(x[0],x[1],p));used.add(x[0]);used.add(x[1]);});
+  S.hands[p]=S.hands[p].filter(t=>!used.has(t));return pr.length;
+}
+function botTurn(p){
+  if(S.over)return;
+  const skip=S.first;S.first=false;
+  if(!skip){
+    const prev=(p+3)%4,top=S.disc[prev].at(-1);
+    if(top&&(isWild(top)||use(top,S.hands[p])>=4)){S.disc[prev].pop();S.hands[p].push(top);}
+    else if(S.stock.length)S.hands[p].push(S.stock.pop());
+    else return tie();
+  }
+  if(!S.opened[p]){
+    const sol=solve(S.hands[p],c=>c.pts);
+    if(sol.w>=BOTS_MIN){placeMelds(p,sol.pick);S.opened[p]=true;S.logs.push(NAMES[p]+' eli açtı ('+sol.w+').');}
+    else if(pairsFrom(S.hands[p]).length>=5){botPairs(p);S.opened[p]=true;S.pairs[p]=true;S.logs.push(NAMES[p]+' çift açtı.');}
+  }
+  if(S.opened[p]&&!S.pairs[p]){
+    const sol=solve(S.hands[p],c=>c.idx.length*100+c.pts);placeMelds(p,sol.pick);
+    let ch=true;
+    while(ch){ch=false;for(const t of S.hands[p].slice()){for(let mi=0;mi<S.table.length;mi++){if(attach(t,mi)){S.hands[p].splice(S.hands[p].indexOf(t),1);ch=true;break;}}}}
+  }else if(S.pairs[p])botPairs(p);
+  if(!S.hands[p].length)return win(p);
+  const h=S.hands[p];let worst=h[0],wu=1e9;
+  h.forEach(t=>{const u=use(t,h);if(u<wu){wu=u;worst=t;}});
+  h.splice(h.indexOf(worst),1);S.disc[p].push(worst);
+  if(!h.length)return win(p);
+  while(S.logs.length>3)S.logs.shift();
+  S.turn=(p+1)%4;S.phase='draw';next();
+}
+
+function T(t,o){
+  o=o||{};const w=isWild(t);
+  const n=o.n!=null?o.n:(t.fake?'★':t.n),c=o.c!=null?o.c:(t.fake?4:t.c);
+  return '<div class="tile c'+c+(w?' wild':'')+(o.sel&&sel.has(t.id)?' sel':'')+'" data-id="'+t.id+'"><b>'+n+'</b>'+(t.fake&&o.n==null?'':'<i></i>')+'</div>';
+}
+const meldHTML=(m,i)=>'<div class="meld" data-act="meld" data-mi="'+i+'"><span class="own">'+NAMES[m.owner]+'</span><div class="row">'+m.seq.map(x=>T(x.t,{n:x.n,c:x.c})).join('')+'</div></div>';
+function seatHTML(p){
+  const top=S.disc[p].at(-1),h=getHand(p).length+(p===0?pending.reduce((a,m)=>a+m.tiles.length,0):0);
+  const can=p===3&&S.turn===0&&S.phase==='draw'&&top&&!S.over;
+  return '<div class="seat'+(S.turn===p?' turn':'')+'"><div class="nm">'+NAMES[p]+(dealer===p?' •':'')+'</div><div>'+h+' taş'+(S.opened[p]?(S.pairs[p]?' · çift':' · açtı'):'')+'</div><div class="pile'+(can?' take':'')+'"'+(can?' data-act="disc"':'')+'>'+(top?T(top):'<span class="empty">boş</span>')+'</div></div>';
+}
+function render(){
+  if(!S)return;
+  $('#scores').innerHTML=NAMES.map((n,i)=>'<span class="'+(S.turn===i&&!S.over?'on':'')+'">'+n+' '+total[i]+'</span>').join('');
+  const canDraw=S.turn===0&&S.phase==='draw'&&!S.over;
+  $('#board').innerHTML='<div id="s2">'+seatHTML(2)+'</div><div id="s3">'+seatHTML(3)+'</div><div id="s1">'+seatHTML(1)+'</div><div id="center"><div class="info"><div>gösterge'+T(S.g)+'</div><div>okey'+T({id:'ok',c:S.OC,n:S.ON})+'</div><div>deste<div class="stock'+(canDraw?' take':'')+'"'+(canDraw?' data-act="stock"':'')+'>'+S.stock.length+'</div></div></div><div class="melds">'+S.table.map(meldHTML).join('')+'</div></div>';
+  const pt=pendTotal();
+  let b='';
+  if(pending.length)b+='<div id="pend">'+pending.map(m=>'<div class="meld"><div class="row">'+m.seq.map(x=>T(x.t,{n:x.n,c:x.c})).join('')+'</div></div>').join('')+'<span>Toplam '+pt+' / 101</span><button class="go" data-act="open">Eli aç</button><button data-act="undo">Geri al</button></div>';
+  b+='<div id="wrap"><div id="rack">'+rack.map((t,i)=>'<div class="slot" data-i="'+i+'">'+(t?T(t,{sel:true}):'')+'</div>').join('')+'</div><div id="dropDiscard">At'+(S.disc[0].length?T(S.disc[0].at(-1)):'')+'</div></div>';
+  b+='<div class="btns"><button data-act="per">Per aç</button><button data-act="pairs">Çift aç</button><button data-act="sortc">Seri diz</button><button data-act="sortn">Grup diz</button><button data-act="throw">Seçileni at</button></div>';
+  $('#bottom').innerHTML=b;
+  $('#hint').textContent=S.over?'':S.turn!==0?NAMES[S.turn]+' oynuyor…':S.phase==='draw'?'Sıra sende: desteden çek ya da soldaki Mehmet\'in attığı taşı al.':'Taşlarını diz, per aç ya da işle; sonra bir taş at (sürükle ya da seçip "Seçileni at").';
+  $('#log').textContent=S.logs.slice(-3).join('  ·  ');
+  const old=$('#ov');if(old)old.remove();
+  if(S.over){
+    const r=S.result,ov=document.createElement('div');ov.id='ov';
+    ov.innerHTML='<div class="card"><h2>'+(r.tie?'El berabere, deste bitti':(r.winner===0?'Eli sen bitirdin!':NAMES[r.winner]+' eli bitirdi'))+'</h2><table><tr><th></th><th>Bu el</th><th>Toplam</th></tr>'+NAMES.map((n,i)=>'<tr><td>'+n+'</td><td>'+(r.d[i]>0?'+':'')+r.d[i]+'</td><td>'+total[i]+'</td></tr>').join('')+'</table><button class="go" data-act="new">Yeni el</button></div>';
+    document.body.appendChild(ov);
+  }
+}
+
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-act]');if(!a||!S)return;
+  const m={stock:drawStock,disc:drawDisc,per:perAc,open:commitOpen,undo:undoPending,pairs:cift,sortc:()=>sortRack(0),sortn:()=>sortRack(1),throw:throwSel,meld:()=>attachSel(+a.dataset.mi),new:newRound};
+  if(m[a.dataset.act])m[a.dataset.act]();
+});
+document.addEventListener('pointerdown',e=>{
+  const el=e.target.closest&&e.target.closest('#rack .tile');if(!el||!S||S.over)return;
+  drag={id:+el.dataset.id,x:e.clientX,y:e.clientY,moved:false,el,ghost:null};
+  try{el.setPointerCapture(e.pointerId);}catch(_){}
+});
+window.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>6){
+    drag.moved=true;const g=drag.el.cloneNode(true);g.classList.add('ghost');g.classList.remove('sel');document.body.appendChild(g);drag.ghost=g;drag.el.style.opacity='.3';
+  }
+  if(drag.moved){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
+});
+window.addEventListener('pointerup',e=>{
+  if(!drag)return;const d=drag;drag=null;
+  if(d.ghost)d.ghost.remove();
+  if(!d.moved){if(sel.has(d.id))sel.delete(d.id);else sel.add(d.id);return render();}
+  const x=document.elementFromPoint(e.clientX,e.clientY);if(!x)return render();
+  const slot=x.closest('.slot'),meld=x.closest('.meld[data-mi]'),dd=x.closest('#dropDiscard');
+  const i=rack.findIndex(t=>t&&t.id===d.id);
+  if(slot&&i>=0){const j=+slot.dataset.i;[rack[i],rack[j]]=[rack[j],rack[i]];render();}
+  else if(dd){discard(d.id);render();}
+  else if(meld){sel=new Set([d.id]);attachSel(+meld.dataset.mi);}
+  else render();
+});
+window.__t={get S(){return S;},get rack(){return rack;},newRound,botTurn,validateMeld,validatePairs,solve,drawStock,discard,win,tie};
+newRound();
+})();
+</script></body></html>
