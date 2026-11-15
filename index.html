@@ -1076,7 +1076,13 @@ document.addEventListener('input',e=>{if(e.target&&e.target.id==='nameIn'&&ST.na
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='photoIn'&&t.files&&t.files[0])uploadPhoto(t.files[0]);});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&/^(aName|aMail|aPass)$/.test(e.target.id)){const b=document.querySelector('[data-act=dologin],[data-act=dosign]');if(b)b.click();return;}
   if(e.key==='Enter'&&e.target&&e.target.id==='nameIn'){const b=document.querySelector('[data-act=savename]');if(b)b.click();}});
+document.addEventListener('contextmenu',e=>{
+  const el=e.target.closest&&e.target.closest('#rack .tile');if(!el||!S||S.over)return;
+  e.preventDefault();const id=+el.dataset.id;drag=null;
+  sel.delete(id);if(flipped.has(id))flipped.delete(id);else flipped.add(id);render();
+});
 document.addEventListener('pointerdown',e=>{
+  if(e.button>0)return;
   const sr=e.target.closest&&e.target.closest('.it.canpick,.pbox.take');
   if(sr&&S&&!S.over&&S.turn===0&&S.phase==='draw'){drag={src:sr.classList.contains('canpick')?'stock':'disc',x:e.clientX,y:e.clientY,moved:false,el:sr,ghost:null};return;}
   const el=e.target.closest&&e.target.closest('#rack .tile');if(!el||!S||S.over)return;
